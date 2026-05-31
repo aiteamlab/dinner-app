@@ -208,7 +208,7 @@ html,body{height:100%;font-family:'Noto Sans JP',sans-serif;background:var(--bg)
   <div class="hdr">
     <div>
       <h1>🍱 今日の献立</h1>
-      <p id="hdr-date"></p>
+      <p id="hdr-date">読み込み中...</p>
     </div>
     <div class="hdr-budget" onclick="switchTab('budget')">
       <div class="hdr-budget-label">今日の予算</div>
@@ -4023,9 +4023,11 @@ function renderDecided(wrap){
   // 支出記録
   html+=`<div style="margin-top:12px;" class="log-form">
     <div class="log-form-title">💳 今日の支出を記録</div>
-    <div class="log-input-row">
-      <input id="q-memo" type="text" placeholder="メモ（例：スーパー）">
-      <input id="q-amount" type="number" placeholder="金額" min="0" step="10" style="width:90px;">
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <input id="q-memo" type="text" placeholder="メモ（例：スーパー）" style="flex:1;font-size:14px;padding:9px 11px;border:1px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--text);font-family:inherit;">
+    </div>
+    <div style="display:flex;gap:8px;">
+      <input id="q-amount" type="number" placeholder="金額（円）" min="0" step="10" style="flex:1;font-size:14px;padding:9px 11px;border:1px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--text);font-family:inherit;text-align:right;">
       <button class="log-add-btn" onclick="quickAddLog()">追加</button>
     </div>
   </div>`;
@@ -4322,6 +4324,9 @@ function deleteFav(idx){
 function init(){
   load();
   const now=new Date();
+  const WEEK=['日','月','火','水','木','金','土'];
+  const hdrDate=document.getElementById('hdr-date');
+  if(hdrDate) hdrDate.textContent=`${now.getMonth()+1}月${now.getDate()}日（${WEEK[now.getDay()]}）`;
   const ym=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   const bm=document.getElementById('budget-month');
   const ld=document.getElementById('log-date');
