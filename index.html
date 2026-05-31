@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="今日の献立">
+<meta name="theme-color" content="#4a7c59">
+<link rel="manifest" href="manifest.json">
+<title>今日の献立</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green: #4a7c59;
+  --green-light: #eaf3ee;
+  --green-mid: #c6dece;
+  --orange: #d4651a;
+  --orange-light: #fdf0e8;
+  --red: #c0392b;
+  --red-light: #fdecea;
+  --yellow: #c8920a;
+  --yellow-light: #fef8ec;
+  --bg: #f5f3ef;
+  --surface: #ffffff;
+  --surface2: #f0ede7;
+  --text: #1e1e1e;
+  --text2: #5a5a5a;
+  --text3: #9a9a9a;
+  --border: #e2ddd6;
+  --r: 14px;
+  --rs: 9px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);}
+.app{max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
+
+/* ヘッダー */
+.hdr{background:var(--green);padding:14px 18px 12px;display:flex;align-items:center;justify-content:space-between;}
+.hdr-left h1{font-size:18px;font-weight:700;color:#fff;letter-spacing:0.01em;}
+.hdr-left p{font-size:11px;color:rgba(255,255,255,0.7);margin-top:1px;}
+.hdr-budget{background:rgba(255,255,255,0.15);border-radius:10px;padding:6px 12px;text-align:right;}
+.hdr-budget-label{font-size:10px;color:rgba(255,255,255,0.7);}
+.hdr-budget-val{font-size:15px;font-weight:700;color:#fff;}
+
+/* タブ */
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex:1;min-width:60px;padding:10px 4px 8px;text-align:center;font-size:10px;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all 0.15s;}
+.tab svg{width:19px;height:19px;}
+.tab.active{color:var(--green);border-bottom-color:var(--green);font-weight:500;}
+
+/* ページ */
+.pages{flex:1;overflow-y:auto;}
+.page{display:none;padding:14px 14px 24px;}
+.page.active{display:block;}
+
+/* ===== 今日タブ ===== */
+.today-hero{background:var(--green);border-radius:var(--r);padding:18px;margin-bottom:14px;color:#fff;}
+.today-hero-label{font-size:11px;opacity:0.75;margin-bottom:6px;}
+.today-hero-dish{font-size:22px;font-weight:700;line-height:1.3;margin-bottom:4px;}
+.today-hero-sub{font-size:13px;opacity:0.8;}
+.today-hero-meta{display:flex;gap:10px;margin-top:12px;}
+.hero-badge{background:rgba(255,255,255,0.2);border-radius:20px;padding:4px 10px;font-size:12px;}
+.today-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.action-btn{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center;cursor:pointer;transition:all 0.15s;}
+.action-btn:active{background:var(--surface2);}
+.action-btn svg{width:22px;height:22px;margin-bottom:6px;color:var(--green);}
+.action-btn span{display:block;font-size:12px;font-weight:500;}
+.action-btn small{display:block;font-size:11px;color:var(--text3);margin-top:2px;}
+
+/* 今週の献立ミニカード */
+.week-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;scrollbar-width:none;}
+.week-strip::-webkit-scrollbar{display:none;}
+.week-chip{flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 10px;min-width:70px;cursor:pointer;transition:all 0.15s;}
+.week-chip.today{border-color:var(--green);background:var(--green-light);}
+.week-chip-day{font-size:10px;color:var(--text3);margin-bottom:3px;}
+.week-chip-name{font-size:11px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:64px;}
+.week-chip.today .week-chip-day{color:var(--green);}
+
+/* 記録カード */
+.quick-log{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;}
+.quick-log-title{font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.quick-log-row{display:flex;gap:8px;}
+.quick-log-row input{flex:1;font-size:14px;padding:9px 11px;border:1px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--text);font-family:inherit;}
+.quick-log-row input:focus{outline:none;border-color:var(--green);}
+.log-add-btn{padding:9px 16px;background:var(--green);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
+
+/* ===== 献立タブ ===== */
+.menu-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.menu-header h2{font-size:15px;font-weight:700;}
+.gen-btn{background:var(--green);color:#fff;border:none;border-radius:var(--rs);padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;}
+.gen-btn svg{width:14px;height:14px;}
+.menu-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;position:relative;}
+.menu-card.today-card{border-color:var(--green);border-width:2px;}
+.today-mark{position:absolute;top:-1px;right:12px;background:var(--green);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:0 0 6px 6px;}
+.mc-day{font-size:11px;color:var(--text3);font-weight:700;letter-spacing:0.04em;margin-bottom:4px;}
+.mc-main{font-size:16px;font-weight:700;margin-bottom:3px;}
+.mc-side{font-size:13px;color:var(--text2);margin-bottom:10px;}
+.mc-footer{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.badge{font-size:11px;padding:3px 9px;border-radius:20px;display:inline-flex;align-items:center;gap:3px;white-space:nowrap;}
+.b-cost{background:var(--green-light);color:var(--green);}
+.b-time{background:var(--surface2);color:var(--text2);}
+.b-sale{background:var(--yellow-light);color:var(--yellow);}
+.b-fridge{background:var(--green-light);color:var(--green);}
+.b-steps{background:#f0eefe;color:#6655cc;}
+.fav-btn{margin-left:auto;background:transparent;border:1px solid var(--border);border-radius:var(--rs);padding:4px 9px;font-size:12px;cursor:pointer;color:var(--text3);}
+.fav-btn.on{color:var(--yellow);border-color:#f5d080;}
+
+/* レシピ展開 */
+.recipe-detail{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.recipe-detail.open{display:block;}
+.recipe-steps{counter-reset:step;}
+.recipe-step{display:flex;gap:10px;margin-bottom:10px;font-size:13px;line-height:1.6;}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.ingredient-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.ing-chip{font-size:12px;background:var(--green-light);color:var(--green);padding:3px 9px;border-radius:20px;}
+
+/* ===== 買い物タブ ===== */
+.shop-budget-bar{background:var(--surface);border-radius:var(--r);padding:14px;margin-bottom:12px;border:1px solid var(--border);}
+.shop-total-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;}
+.prog-bg{height:8px;background:var(--border);border-radius:4px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:4px;transition:width 0.4s;}
+.shop-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;}
+.shop-cat-title{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.04em;margin-bottom:10px;}
+.shop-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+.shop-item:last-child{border-bottom:none;}
+.shop-item label{flex:1;font-size:14px;cursor:pointer;transition:all 0.15s;}
+.shop-item.done label{text-decoration:line-through;color:var(--text3);}
+.shop-item input[type=checkbox]{width:20px;height:20px;accent-color:var(--green);flex-shrink:0;cursor:pointer;}
+.shop-qty{font-size:12px;color:var(--text3);}
+
+/* ===== 予算タブ ===== */
+.budget-summary{background:var(--green);border-radius:var(--r);padding:18px;margin-bottom:12px;color:#fff;}
+.bs-row{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px;}
+.bs-main{font-size:28px;font-weight:700;}
+.bs-sub{font-size:12px;opacity:0.75;margin-bottom:4px;}
+.bs-badge{background:rgba(255,255,255,0.2);border-radius:20px;padding:4px 12px;font-size:12px;}
+.bs-bar-bg{height:10px;background:rgba(255,255,255,0.25);border-radius:5px;overflow:hidden;margin-bottom:8px;}
+.bs-bar-fill{height:100%;border-radius:5px;background:#fff;transition:width 0.5s;}
+.bs-days{display:flex;justify-content:space-between;font-size:11px;opacity:0.75;}
+.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:12px 14px;}
+.metric-label{font-size:11px;color:var(--text3);margin-bottom:4px;}
+.metric-value{font-size:20px;font-weight:700;color:var(--text);}
+.metric-value.ok{color:var(--green);}
+.metric-value.warn{color:var(--yellow);}
+.metric-value.ng{color:var(--red);}
+.metric-revised{background:var(--orange-light);border:1px solid #f5c9a5;border-radius:var(--r);padding:14px;margin-bottom:12px;}
+.mr-label{font-size:12px;color:var(--orange);margin-bottom:4px;font-weight:500;}
+.mr-val{font-size:24px;font-weight:700;color:var(--orange);}
+.mr-note{font-size:12px;color:var(--orange);opacity:0.8;margin-top:2px;}
+.alert-box{border-radius:var(--rs);padding:10px 14px;font-size:13px;margin-bottom:12px;display:flex;gap:8px;align-items:flex-start;line-height:1.5;}
+.alert-box svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;}
+.alert-ok{background:var(--green-light);color:var(--green);}
+.alert-warn{background:var(--yellow-light);color:var(--yellow);}
+.alert-ng{background:var(--red-light);color:var(--red);}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px;}
+.card-title{font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px;color:var(--text2);}
+.form-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.form-row label{font-size:14px;flex:1;}
+.form-row input,.form-row select{width:130px;font-size:14px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--text);font-family:inherit;}
+.form-row input:focus,.form-row select:focus{outline:none;border-color:var(--green);}
+.log-list-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.log-list-item:last-child{border-bottom:none;}
+.log-date{font-size:12px;color:var(--text3);width:48px;flex-shrink:0;}
+.log-memo{flex:1;font-size:14px;}
+.log-amt{font-size:14px;font-weight:700;}
+.del-btn{background:transparent;border:none;cursor:pointer;color:var(--text3);font-size:12px;padding:4px 6px;}
+
+/* ===== 設定タブ ===== */
+.section-title{font-size:12px;font-weight:700;color:var(--text3);letter-spacing:0.05em;margin-bottom:10px;}
+.tags{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;}
+.tag{font-size:13px;padding:6px 12px;border-radius:20px;border:1px solid var(--border);color:var(--text2);cursor:pointer;background:var(--surface);user-select:none;transition:all 0.1s;}
+.tag:active{opacity:0.7;}
+.tag.t-red{background:var(--red-light);color:var(--red);border-color:#f0b8b0;}
+.tag.t-green{background:var(--green-light);color:var(--green);border-color:var(--green-mid);}
+.tag.t-yellow{background:var(--yellow-light);color:var(--yellow);border-color:#f5d88a;}
+.custom-inp{width:100%;font-size:13px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--text);font-family:inherit;margin-top:2px;}
+.custom-inp:focus{outline:none;border-color:var(--green);}
+.time-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.time-row label{font-size:14px;flex:1;}
+.time-row select{width:140px;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--text);font-family:inherit;}
+.big-gen-btn{width:100%;padding:15px;border-radius:var(--r);background:var(--green);color:#fff;font-size:16px;font-weight:700;border:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;}
+.big-gen-btn:active{opacity:0.85;}
+
+/* お気に入り */
+.fav-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;}
+.fav-icon{width:38px;height:38px;border-radius:50%;background:var(--yellow-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;}
+.fav-info{flex:1;min-width:0;}
+.fav-name{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fav-sub{font-size:12px;color:var(--text3);margin-top:2px;}
+
+/* ローディング */
+.loading{text-align:center;padding:48px 20px;color:var(--text3);}
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 14px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.empty{text-align:center;padding:44px 20px;color:var(--text3);font-size:14px;line-height:1.9;}
+.empty-icon{font-size:36px;margin-bottom:12px;}
+.divider{height:1px;background:var(--border);margin:14px 0;}
+
+@supports(padding-bottom:env(safe-area-inset-bottom)){
+  .pages{padding-bottom:env(safe-area-inset-bottom);}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hdr">
+    <div class="hdr-left">
+      <h1>🍱 今日の献立</h1>
+      <p id="hdr-date">読み込み中...</p>
+    </div>
+    <div class="hdr-budget" onclick="switchTab('budget')">
+      <div class="hdr-budget-label">今日の予算</div>
+      <div class="hdr-budget-val" id="hdr-daily">¥-</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('today')" id="tab-today">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>今日
+    </div>
+    <div class="tab" onclick="switchTab('menu')" id="tab-menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>今週の献立
+    </div>
+    <div class="tab" onclick="switchTab('shopping')" id="tab-shopping">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>買い物
+    </div>
+    <div class="tab" onclick="switchTab('budget')" id="tab-budget">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>予算
+    </div>
+    <div class="tab" onclick="switchTab('settings')" id="tab-settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>設定
+    </div>
+  </div>
+
+  <div class="pages">
+    <!-- ===== 今日タブ ===== -->
+    <div class="page active" id="page-today">
+      <div id="today-hero-wrap"></div>
+      <div id="week-strip-wrap"></div>
+      <div class="quick-log">
+        <div class="quick-log-title">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          今日の支出を記録
+        </div>
+        <div class="quick-log-row">
+          <input id="q-memo" type="text" placeholder="メモ（例：スーパー）">
+          <input id="q-amount" type="number" placeholder="金額" min="0" step="10" style="width:90px;">
+          <button class="log-add-btn" onclick="quickAddLog()">追加</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 今週の献立タブ ===== -->
+    <div class="page" id="page-menu">
+      <div class="menu-header">
+        <h2>今週の献立</h2>
+        <button class="gen-btn" onclick="generateMenu()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+          再提案
+        </button>
+      </div>
+      <div id="menu-content">
+        <div class="empty"><div class="empty-icon">🍳</div>設定タブで条件を入力して<br>献立を生成してください</div>
+      </div>
+    </div>
+
+    <!-- ===== 買い物タブ ===== -->
+    <div class="page" id="page-shopping">
+      <div id="shopping-content">
+        <div class="empty"><div class="empty-icon">🛒</div>献立を生成すると<br>買い物リストが表示されます</div>
+      </div>
+    </div>
+
+    <!-- ===== 予算タブ ===== -->
+    <div class="page" id="page-budget">
+      <div id="budget-summary-wrap"></div>
+      <div id="revised-wrap"></div>
+      <div id="budget-alert-wrap"></div>
+
+      <div class="card">
+        <div class="card-title">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          月間予算の設定
+        </div>
+        <div class="form-row"><label>月の食費予算</label><input id="monthly-budget" type="number" value="45000" min="1000" max="300000" step="1000" oninput="recalc()"></div>
+        <div style="font-size:12px;color:var(--text3);text-align:right;margin:-6px 0 10px;">円 / 月</div>
+        <div class="form-row"><label>対象年月</label><input id="budget-month" type="month" oninput="recalc()"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          支出を登録
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <input id="log-date" type="date" style="flex:1;font-size:13px;padding:8px;border:1px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--text);font-family:inherit;">
+          <input id="log-memo" type="text" placeholder="メモ" style="flex:1.4;font-size:13px;padding:8px;border:1px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--text);font-family:inherit;">
+        </div>
+        <div style="display:flex;gap:8px;">
+          <input id="log-amount" type="number" placeholder="金額（円）" min="0" step="10" style="flex:1;font-size:14px;padding:9px;border:1px solid var(--border);border-radius:var(--rs);background:var(--bg);color:var(--text);font-family:inherit;text-align:right;">
+          <button onclick="addLog()" style="padding:9px 16px;background:var(--green);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">追加</button>
+        </div>
+      </div>
+
+      <div id="log-list-wrap"></div>
+    </div>
+
+    <!-- ===== 設定タブ ===== -->
+    <div class="page" id="page-settings">
+      <div class="card">
+        <div class="section-title">基本設定</div>
+        <div class="form-row"><label>家族の人数</label>
+          <select id="family-count"><option>1人</option><option>2人</option><option selected>3〜4人</option><option>5人以上</option></select>
+        </div>
+        <div class="form-row"><label>提案する日数</label>
+          <select id="days-count" onchange="buildTimeSettings()"><option>3日分</option><option selected>5日分</option><option>7日分</option></select>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">🚫 苦手・アレルギー食材</div>
+        <div class="tags">
+          <span class="tag" onclick="toggleTag(this,'t-red','allergies')">えび・かに</span>
+          <span class="tag" onclick="toggleTag(this,'t-red','allergies')">小麦</span>
+          <span class="tag" onclick="toggleTag(this,'t-red','allergies')">卵</span>
+          <span class="tag" onclick="toggleTag(this,'t-red','allergies')">乳製品</span>
+          <span class="tag" onclick="toggleTag(this,'t-red','allergies')">魚介類</span>
+          <span class="tag" onclick="toggleTag(this,'t-red','allergies')">肉類</span>
+          <span class="tag" onclick="toggleTag(this,'t-red','allergies')">大豆</span>
+          <span class="tag" onclick="toggleTag(this,'t-red','allergies')">なす</span>
+          <span class="tag" onclick="toggleTag(this,'t-red','allergies')">ピーマン</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">🧊 冷蔵庫の残り食材（優先使用）</div>
+        <div class="tags">
+          <span class="tag" onclick="toggleTag(this,'t-green','fridge')">鶏肉</span>
+          <span class="tag" onclick="toggleTag(this,'t-green','fridge')">豚肉</span>
+          <span class="tag" onclick="toggleTag(this,'t-green','fridge')">卵</span>
+          <span class="tag" onclick="toggleTag(this,'t-green','fridge')">豆腐</span>
+          <span class="tag" onclick="toggleTag(this,'t-green','fridge')">玉ねぎ</span>
+          <span class="tag" onclick="toggleTag(this,'t-green','fridge')">にんじん</span>
+          <span class="tag" onclick="toggleTag(this,'t-green','fridge')">じゃがいも</span>
+          <span class="tag" onclick="toggleTag(this,'t-green','fridge')">キャベツ</span>
+          <span class="tag" onclick="toggleTag(this,'t-green','fridge')">もやし</span>
+          <span class="tag" onclick="toggleTag(this,'t-green','fridge')">ほうれん草</span>
+          <span class="tag" onclick="toggleTag(this,'t-green','fridge')">トマト</span>
+          <span class="tag" onclick="toggleTag(this,'t-green','fridge')">きのこ</span>
+        </div>
+        <input class="custom-inp" id="fridge-custom" type="text" placeholder="その他（例：大根, れんこん）">
+      </div>
+
+      <div class="card">
+        <div class="section-title">🏷️ 今日の特売食材</div>
+        <div class="tags">
+          <span class="tag" onclick="toggleTag(this,'t-yellow','sale')">鶏肉</span>
+          <span class="tag" onclick="toggleTag(this,'t-yellow','sale')">豚肉</span>
+          <span class="tag" onclick="toggleTag(this,'t-yellow','sale')">牛肉</span>
+          <span class="tag" onclick="toggleTag(this,'t-yellow','sale')">魚</span>
+          <span class="tag" onclick="toggleTag(this,'t-yellow','sale')">豆腐</span>
+          <span class="tag" onclick="toggleTag(this,'t-yellow','sale')">卵</span>
+          <span class="tag" onclick="toggleTag(this,'t-yellow','sale')">野菜全般</span>
+        </div>
+        <input class="custom-inp" id="sale-custom" type="text" placeholder="その他（例：鮭, ブロッコリー）">
+      </div>
+
+      <div class="card">
+        <div class="section-title">⏱️ 曜日別の調理時間</div>
+        <div id="time-settings"></div>
+      </div>
+
+      <button class="big-gen-btn" onclick="generateMenu()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
+        献立を提案する
+      </button>
+
+      <div class="card">
+        <div class="section-title">⭐ お気に入り献立</div>
+        <div id="fav-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== レシピDB ==========
+const RECIPES = [
+  {main:'鶏の唐揚げ',side:'冷奴とわかめのみそ汁',cost:900,time:30,tags:['鶏肉'],
+   steps:['鶏もも肉を一口大に切り、醤油・みりん・酒・生姜で15分漬け込む','片栗粉をまぶして170℃の油で4〜5分揚げる','最後に180℃で1分揚げてカリッとさせる','豆腐を器に盛り、わかめのみそ汁を作る'],
+   ingredients:[{cat:'肉・魚',name:'鶏もも肉',qty:'400g'},{cat:'調味料',name:'醤油・みりん・酒',qty:'各大2'},{cat:'粉類',name:'片栗粉',qty:'大4'},{cat:'豆腐',name:'豆腐',qty:'1丁'}]},
+  {main:'豚の生姜焼き',side:'キャベツとコーンのスープ',cost:900,time:20,tags:['豚肉'],
+   steps:['豚ロースをひとくちサイズに切る','醤油・みりん・酒・生姜をまぜてタレを作る','油をひいたフライパンで豚肉を炒め、タレを絡める','キャベツを千切りにして付け合わせ、スープを作る'],
+   ingredients:[{cat:'肉・魚',name:'豚ロース薄切り',qty:'300g'},{cat:'野菜',name:'キャベツ',qty:'1/4個'},{cat:'調味料',name:'醤油・みりん・生姜',qty:'各大2'}]},
+  {main:'親子丼',side:'けんちん汁',cost:700,time:20,tags:['鶏肉','卵'],
+   steps:['鶏もも肉を一口大に切り、玉ねぎを薄切りにする','だし・醤油・みりん・砂糖で煮汁を作り鶏肉と玉ねぎを煮る','溶き卵を回し入れ、半熟で火を止めてご飯に乗せる'],
+   ingredients:[{cat:'肉・魚',name:'鶏もも肉',qty:'250g'},{cat:'卵',name:'卵',qty:'3個'},{cat:'野菜',name:'玉ねぎ',qty:'1個'},{cat:'調味料',name:'だし・醤油・みりん',qty:'各適量'}]},
+  {main:'麻婆豆腐',side:'卵スープ',cost:700,time:25,tags:['豆腐'],
+   steps:['豆腐を2cm角に切り熱湯でゆでて水気を切る','ひき肉・にんにく・生姜・豆板醤を炒める','スープを加えて豆腐を入れ、水溶き片栗粉でとろみをつける'],
+   ingredients:[{cat:'肉・魚',name:'豚ひき肉',qty:'150g'},{cat:'豆腐',name:'木綿豆腐',qty:'1丁'},{cat:'調味料',name:'豆板醤・醤油',qty:'各適量'}]},
+  {main:'ポークカレー',side:'グリーンサラダ',cost:1100,time:45,tags:['豚肉','じゃがいも','にんじん'],
+   steps:['野菜と肉を一口大に切る','肉を炒め、野菜を加えてさらに炒める','水を加えて煮込み（20分）、火を止めてカレールーを溶かす','再度5分煮込んで完成'],
+   ingredients:[{cat:'肉・魚',name:'豚肩ロース',qty:'300g'},{cat:'野菜',name:'じゃがいも・にんじん・玉ねぎ',qty:'各2個'},{cat:'調味料',name:'カレールー',qty:'1/2箱'}]},
+  {main:'鮭の塩焼き',side:'きのこの炊き込みご飯',cost:900,time:25,tags:['魚','きのこ'],
+   steps:['鮭に塩を振り10分置き、水気を拭く','グリルまたはフライパンで両面こんがり焼く（各3〜4分）','しめじ・えのきを炊き込みご飯に炊く'],
+   ingredients:[{cat:'肉・魚',name:'生鮭',qty:'3切れ'},{cat:'きのこ',name:'しめじ・えのき',qty:'各1袋'},{cat:'調味料',name:'塩・醤油・みりん',qty:'各適量'}]},
+  {main:'豚キムチ炒め',side:'もやしのナムル',cost:900,time:15,tags:['豚肉','もやし'],
+   steps:['豚バラをひと口大に切り、ごま油で炒める','キムチとニラを加えてさっと炒め、醤油で味を整える','もやしをゆでてごま油・塩・ごまで和える'],
+   ingredients:[{cat:'肉・魚',name:'豚バラ薄切り',qty:'200g'},{cat:'漬物',name:'キムチ',qty:'150g'},{cat:'野菜',name:'もやし・ニラ',qty:'各1袋'}]},
+  {main:'オムライス',side:'コンソメスープ',cost:600,time:25,tags:['卵'],
+   steps:['鶏ひき肉と玉ねぎを炒めケチャップで味付けしてチキンライスを作る','溶き卵2個分を薄く焼き、チキンライスを包む','ケチャップをかけて完成'],
+   ingredients:[{cat:'卵',name:'卵',qty:'4個'},{cat:'肉・魚',name:'鶏ひき肉',qty:'100g'},{cat:'野菜',name:'玉ねぎ',qty:'1個'},{cat:'調味料',name:'ケチャップ・バター',qty:'各大2'}]},
+  {main:'肉じゃが',side:'もやしの味噌汁',cost:900,time:40,tags:['じゃがいも','にんじん','玉ねぎ'],
+   steps:['牛肉・じゃがいも・にんじん・玉ねぎを切る','牛肉を炒め、野菜を加えてだし汁で煮る','醤油・みりん・砂糖で味付けし、煮汁がなくなるまで煮る'],
+   ingredients:[{cat:'肉・魚',name:'牛こま切れ肉',qty:'200g'},{cat:'野菜',name:'じゃがいも',qty:'4個'},{cat:'野菜',name:'にんじん・玉ねぎ',qty:'各1個'},{cat:'調味料',name:'醤油・みりん・砂糖',qty:'各大2'}]},
+  {main:'ぶりの照り焼き',side:'大根おろしと豆腐の味噌汁',cost:1100,time:20,tags:['魚'],
+   steps:['ぶりに醤油・酒で下味をつける','フライパンで皮目から焼き（3分）、裏返してさらに2分','醤油・みりん・砂糖のタレをからめてツヤよく仕上げる'],
+   ingredients:[{cat:'肉・魚',name:'ぶり切り身',qty:'3切れ'},{cat:'野菜',name:'大根',qty:'1/4本'},{cat:'豆腐',name:'豆腐',qty:'1/2丁'},{cat:'調味料',name:'醤油・みりん・砂糖',qty:'各大2'}]},
+  {main:'さばの味噌煮',side:'ほうれん草のおひたし',cost:800,time:30,tags:['魚','ほうれん草'],
+   steps:['さばに熱湯をかけて臭みを取る','だし・みそ・砂糖・みりん・酒を合わせた煮汁でさばを煮る（15分）','ほうれん草をゆでて醤油とだしで和える'],
+   ingredients:[{cat:'肉・魚',name:'さば切り身',qty:'3切れ'},{cat:'野菜',name:'ほうれん草',qty:'1束'},{cat:'調味料',name:'みそ・砂糖・みりん',qty:'各大2'}]},
+  {main:'豆腐ハンバーグ',side:'きのこソース添え',cost:700,time:30,tags:['豆腐','きのこ'],
+   steps:['豆腐の水気をしっかり切り、ひき肉・玉ねぎと混ぜてこねる','楕円形に成形し、フライパンで両面焼く（各4分）','しめじ・醤油・みりんでソースを作って上からかける'],
+   ingredients:[{cat:'豆腐',name:'木綿豆腐',qty:'1丁'},{cat:'肉・魚',name:'豚ひき肉',qty:'150g'},{cat:'きのこ',name:'しめじ',qty:'1袋'}]},
+  {main:'野菜炒め定食',side:'わかめと豆腐の味噌汁',cost:600,time:15,tags:['キャベツ','もやし'],
+   steps:['豚肉・にんじん・キャベツ・もやしを切る','豚肉を炒め、野菜を加えて強火で炒める','塩こしょう・醤油・ごま油で味付け'],
+   ingredients:[{cat:'肉・魚',name:'豚こま切れ肉',qty:'150g'},{cat:'野菜',name:'キャベツ',qty:'1/4個'},{cat:'野菜',name:'もやし・にんじん',qty:'各1個'}]},
+  {main:'鶏肉のトマト煮込み',side:'パン',cost:950,time:40,tags:['鶏肉','トマト'],
+   steps:['鶏もも肉に塩こしょうして表面を焼く','玉ねぎ・にんにくを炒め、トマト缶を加える','鶏肉を戻し入れ、弱火で20分煮込む'],
+   ingredients:[{cat:'肉・魚',name:'鶏もも肉',qty:'300g'},{cat:'野菜',name:'玉ねぎ・トマト缶',qty:'各1個'},{cat:'調味料',name:'オリーブ油・塩こしょう',qty:'適量'}]},
+  {main:'豚汁定食',side:'ひじきの煮物',cost:800,time:35,tags:['豚肉','じゃがいも','にんじん'],
+   steps:['豚バラ・大根・にんじん・じゃがいも・豆腐を切る','豚肉を炒め、野菜・だし汁を加えて煮る','みそを溶き入れ、最後に豆腐を加える'],
+   ingredients:[{cat:'肉・魚',name:'豚バラ薄切り',qty:'150g'},{cat:'野菜',name:'大根・にんじん・じゃがいも',qty:'各1/2個'},{cat:'豆腐',name:'豆腐',qty:'1/2丁'}]},
+  {main:'鍋焼きうどん',side:'ほうれん草のごま和え',cost:700,time:20,tags:['卵','きのこ','ほうれん草'],
+   steps:['だし汁に醤油・みりん・塩で味を作る','うどん・鶏肉・しめじ・ねぎを入れて煮る','卵を落として半熟になったら完成'],
+   ingredients:[{cat:'麺',name:'冷凍うどん',qty:'3玉'},{cat:'肉・魚',name:'鶏もも肉',qty:'150g'},{cat:'卵',name:'卵',qty:'3個'},{cat:'野菜',name:'ほうれん草',qty:'1/2束'}]},
+];
+
+const DAYS_JP = ['月','火','水','木','金','土','日'];
+let allergies=[], fridge=[], sale=[];
+let favorites=[], logs=[], currentMenu=null;
+
+function load(){
+  try{favorites=JSON.parse(localStorage.getItem('v2_favs')||'[]');}catch(e){}
+  try{logs=JSON.parse(localStorage.getItem('v2_logs')||'[]');}catch(e){}
+}
+function save(){
+  try{localStorage.setItem('v2_favs',JSON.stringify(favorites));}catch(e){}
+  try{localStorage.setItem('v2_logs',JSON.stringify(logs));}catch(e){}
+}
+
+function switchTab(name){
+  ['today','menu','shopping','budget','settings'].forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('active',t===name);
+    document.getElementById('page-'+t).classList.toggle('active',t===name);
+  });
+  if(name==='today') renderToday();
+  if(name==='budget'){recalc();renderLogList();}
+  if(name==='settings') renderFavList();
+}
+
+function toggleTag(el,cls,arr){
+  const on=el.classList.toggle(cls);
+  const t=el.textContent;
+  if(arr==='allergies') allergies=on?[...new Set([...allergies,t])]:allergies.filter(x=>x!==t);
+  if(arr==='fridge')    fridge   =on?[...new Set([...fridge,t])]   :fridge.filter(x=>x!==t);
+  if(arr==='sale')      sale     =on?[...new Set([...sale,t])]     :sale.filter(x=>x!==t);
+}
+
+function buildTimeSettings(){
+  const n=parseInt(document.getElementById('days-count').value)||5;
+  document.getElementById('time-settings').innerHTML=DAYS_JP.slice(0,n).map((d,i)=>`
+    <div class="time-row"><label>${d}曜日</label>
+      <select id="busy-${i}">
+        <option value="60">ゆっくり（〜60分）</option>
+        <option value="30" selected>普通（〜30分）</option>
+        <option value="15">忙しい（〜15分）</option>
+      </select>
+    </div>`).join('');
+}
+
+// ===== 今日タブ =====
+function renderToday(){
+  const now=new Date();
+  const weekDay=now.getDay();
+  const days=['日','月','火','水','木','金','土'];
+  document.getElementById('hdr-date').textContent=
+    `${now.getMonth()+1}月${now.getDate()}日（${days[weekDay]}）`;
+
+  const todayIdx=weekDay===0?6:weekDay-1; // 月=0
+  const wrap=document.getElementById('today-hero-wrap');
+  if(!currentMenu){
+    wrap.innerHTML=`<div class="today-hero" style="text-align:center;cursor:pointer;" onclick="switchTab('settings')">
+      <div style="font-size:32px;margin-bottom:10px;">🍳</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:6px;">献立がまだ設定されていません</div>
+      <div style="font-size:13px;opacity:0.8;">「設定」タブで献立を生成しましょう</div>
+    </div>`;
+    document.getElementById('week-strip-wrap').innerHTML='';
+    return;
+  }
+  const todayMenu=currentMenu.menus[Math.min(todayIdx,currentMenu.menus.length-1)]||currentMenu.menus[0];
+  wrap.innerHTML=`<div class="today-hero">
+    <div class="today-hero-label">今日の夕食</div>
+    <div class="today-hero-dish">${todayMenu.main}</div>
+    <div class="today-hero-sub">副菜・汁物：${todayMenu.side}</div>
+    <div class="today-hero-meta">
+      <span class="hero-badge">¥${todayMenu.cost}</span>
+      <span class="hero-badge">調理 ${todayMenu.time}分</span>
+    </div>
+  </div>
+  <div class="today-actions" style="margin-bottom:14px;">
+    <div class="action-btn" onclick="toggleRecipe('today-recipe')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      <span>作り方を見る</span>
+      <small>タップで展開</small>
+    </div>
+    <div class="action-btn" onclick="switchTab('shopping')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      <span>買い物リスト</span>
+      <small>スーパーで使う</small>
+    </div>
+  </div>
+  <div id="today-recipe" class="recipe-detail" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:14px;">
+    <div style="font-size:13px;font-weight:700;margin-bottom:10px;">🥄 材料（${document.getElementById('family-count')?.value||'3〜4人'}分）</div>
+    <div class="ingredient-list">${(todayMenu.ingredients||[]).map(i=>`<span class="ing-chip">${i.name} ${i.qty}</span>`).join('')}</div>
+    <div style="font-size:13px;font-weight:700;margin-bottom:10px;">📋 作り方</div>
+    <div class="recipe-steps">${(todayMenu.steps||[]).map((s,i)=>`<div class="recipe-step"><div class="step-num">${i+1}</div><div>${s}</div></div>`).join('')}</div>
+  </div>`;
+
+  // 週ストリップ
+  const stripWrap=document.getElementById('week-strip-wrap');
+  stripWrap.innerHTML=`<div style="font-size:12px;font-weight:700;color:var(--text3);margin-bottom:8px;letter-spacing:0.04em;">今週の献立</div>
+  <div class="week-strip">${currentMenu.menus.map((m,i)=>`
+    <div class="week-chip ${i===Math.min(todayIdx,currentMenu.menus.length-1)?'today':''}" onclick="switchTab('menu')">
+      <div class="week-chip-day">${m.day}</div>
+      <div class="week-chip-name">${m.main}</div>
+    </div>`).join('')}</div>`;
+}
+
+function toggleRecipe(id){
+  const el=document.getElementById(id);
+  if(el) el.classList.toggle('open');
+}
+
+// ===== 献立生成 =====
+function generateMenu(){
+  const budget=parseInt(document.getElementById('monthly-budget')?.value||45000);
+  const daysInMonth=getDaysInMonth(document.getElementById('budget-month')?.value||'');
+  const dailyBudget=Math.round(budget/daysInMonth);
+  const daysN=parseInt(document.getElementById('days-count').value)||5;
+  const fridgeCustom=(document.getElementById('fridge-custom').value||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const saleCustom=(document.getElementById('sale-custom').value||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const allFridge=[...fridge,...fridgeCustom];
+  const allSale=[...sale,...saleCustom];
+  const favNames=favorites.map(f=>f.main);
+
+  switchTab('menu');
+  document.getElementById('menu-content').innerHTML='<div class="loading"><div class="spinner"></div>献立を考えています...</div>';
+
+  setTimeout(()=>{
+    let pool=RECIPES.filter(r=>{
+      return !allergies.some(a=>r.tags.includes(a)||r.main.includes(a));
+    });
+    const menus=[];
+    const used=new Set(favNames.slice(-3));
+    for(let i=0;i<daysN;i++){
+      const maxTime=parseInt(document.getElementById('busy-'+i)?.value||30);
+      let cands=pool.filter(r=>r.time<=maxTime&&!used.has(r.main));
+      if(allFridge.length){
+        const fp=cands.filter(r=>allFridge.some(f=>r.tags.includes(f)||r.ingredients.some(ing=>ing.name.includes(f))));
+        if(fp.length) cands=fp;
+      }
+      if(allSale.length){
+        const sp=cands.filter(r=>allSale.some(s=>r.tags.includes(s)||r.ingredients.some(ing=>ing.name.includes(s))));
+        if(sp.length) cands=sp;
+      }
+      if(!cands.length) cands=pool.filter(r=>r.time<=maxTime);
+      if(!cands.length) cands=pool;
+      const bf=cands.filter(r=>r.cost<=dailyBudget);
+      const final=bf.length?bf:cands;
+      const pick=final[Math.floor(Math.random()*final.length)];
+      const saleUsed=allSale.some(s=>pick.tags.includes(s));
+      const fridUsed=allFridge.some(f=>pick.tags.includes(f));
+      menus.push({...pick,day:DAYS_JP[i]+'曜日',sale_used:saleUsed,fridge_used:fridUsed});
+      used.add(pick.main);
+    }
+    const total=menus.reduce((s,m)=>s+m.cost,0);
+    currentMenu={menus,total_cost:total};
+    renderMenuPage(currentMenu,dailyBudget,daysN);
+    renderShopping(currentMenu);
+    renderToday();
+    updateHeader();
+  },500);
+}
+
+function renderMenuPage(data,budget,days){
+  const totalBudget=budget*days;
+  const pct=Math.min(100,Math.round(data.total_cost/totalBudget*100));
+  const over=data.total_cost>totalBudget;
+  let html=`<div class="shop-budget-bar" style="margin-bottom:12px;">
+    <div class="shop-total-row"><span>合計食費</span><span style="font-weight:700;">¥${data.total_cost.toLocaleString()} / ¥${totalBudget.toLocaleString()}</span></div>
+    <div class="prog-bg"><div class="prog-fill" style="width:${pct}%;background:${over?'var(--red)':'var(--green)'};"></div></div>
+    <div style="font-size:12px;margin-top:6px;color:${over?'var(--red)':'var(--green)'};">${over?'⚠ 予算オーバー':'✓ 予算内OK'}</div>
+  </div>`;
+  data.menus.forEach((m,i)=>{
+    const isFav=favorites.some(f=>f.main===m.main);
+    html+=`<div class="menu-card" id="mc-${i}">
+      <div class="mc-day">${m.day}</div>
+      <div style="display:flex;align-items:flex-start;gap:8px;">
+        <div style="flex:1;">
+          <div class="mc-main">${m.main}</div>
+          <div class="mc-side">副菜・汁物：${m.side}</div>
+        </div>
+        <button class="fav-btn ${isFav?'on':''}" onclick="toggleFav(${i},this)">${isFav?'★':'☆'}</button>
+      </div>
+      <div class="mc-footer">
+        <span class="badge b-cost">¥${m.cost}</span>
+        <span class="badge b-time">${m.time}分</span>
+        ${m.sale_used?'<span class="badge b-sale">特売活用</span>':''}
+        ${m.fridge_used?'<span class="badge b-fridge">冷蔵庫活用</span>':''}
+        <span class="badge b-steps" onclick="toggleRecipe('recipe-${i}')" style="cursor:pointer;">作り方▾</span>
+      </div>
+      <div class="recipe-detail" id="recipe-${i}">
+        <div style="font-size:12px;font-weight:700;margin-bottom:8px;">材料</div>
+        <div class="ingredient-list">${(m.ingredients||[]).map(ing=>`<span class="ing-chip">${ing.name} ${ing.qty}</span>`).join('')}</div>
+        <div style="font-size:12px;font-weight:700;margin-bottom:8px;">作り方</div>
+        <div class="recipe-steps">${(m.steps||[]).map((s,si)=>`<div class="recipe-step"><div class="step-num">${si+1}</div><div style="font-size:13px;">${s}</div></div>`).join('')}</div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('menu-content').innerHTML=html;
+}
+
+function toggleFav(idx,btn){
+  const m=currentMenu.menus[idx];
+  const ei=favorites.findIndex(f=>f.main===m.main);
+  if(ei>=0){favorites.splice(ei,1);btn.className='fav-btn';btn.textContent='☆';}
+  else{favorites.push({main:m.main,side:m.side,cost:m.cost,time:m.time,saved:new Date().toLocaleDateString('ja-JP')});btn.className='fav-btn on';btn.textContent='★';}
+  save();
+}
+
+// ===== 買い物リスト =====
+function renderShopping(data){
+  const cats={};
+  data.menus.forEach(m=>{
+    (m.ingredients||[]).forEach(ing=>{
+      if(!cats[ing.cat]) cats[ing.cat]=[];
+      if(!cats[ing.cat].find(x=>x.name===ing.name)) cats[ing.cat].push({name:ing.name,qty:ing.qty});
+    });
+  });
+  const total=Object.values(cats).reduce((s,v)=>s+v.length,0);
+  let html=`<div class="shop-budget-bar">
+    <div class="shop-total-row"><span style="font-weight:700;">買い物リスト</span><span style="color:var(--text3);">全 ${total} 品</span></div>
+    <div style="font-size:12px;color:var(--text3);margin-top:4px;">チェックして使いましょう</div>
+  </div>`;
+  Object.entries(cats).forEach(([cat,items])=>{
+    html+=`<div class="shop-section"><div class="shop-cat-title">${cat}</div>`;
+    items.forEach((item,i)=>{
+      html+=`<div class="shop-item" id="si-row-${cat}-${i}">
+        <input type="checkbox" id="si-${cat}-${i}" onchange="toggleShopItem('si-row-${cat}-${i}',this)">
+        <label for="si-${cat}-${i}">${item.name}</label>
+        <span class="shop-qty">${item.qty}</span>
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  document.getElementById('shopping-content').innerHTML=html;
+}
+
+function toggleShopItem(rowId,cb){
+  document.getElementById(rowId).classList.toggle('done',cb.checked);
+}
+
+// ===== 予算 =====
+function getDaysInMonth(ym){
+  if(!ym) return 30;
+  const [y,m]=ym.split('-').map(Number);
+  return new Date(y,m,0).getDate();
+}
+
+function updateHeader(){
+  const monthly=parseInt(document.getElementById('monthly-budget')?.value||45000);
+  const ym=document.getElementById('budget-month')?.value||'';
+  const totalDays=getDaysInMonth(ym);
+  const daily=Math.round(monthly/totalDays);
+  document.getElementById('hdr-daily').textContent='¥'+daily.toLocaleString();
+}
+
+function recalc(){
+  const monthly=parseInt(document.getElementById('monthly-budget').value)||0;
+  const ym=document.getElementById('budget-month').value;
+  const totalDays=getDaysInMonth(ym);
+  const daily=Math.round(monthly/totalDays);
+  document.getElementById('hdr-daily').textContent='¥'+daily.toLocaleString();
+
+  const now=new Date();
+  const curYM=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const passed=ym===curYM?now.getDate():totalDays;
+  const remainDays=Math.max(0,totalDays-passed+1);
+
+  const ml=logs.filter(l=>l.date&&l.date.startsWith(ym));
+  const spent=ml.reduce((s,l)=>s+l.amount,0);
+  const remain=monthly-spent;
+  const pct=monthly>0?Math.min(100,Math.round(spent/monthly*100)):0;
+
+  // サマリー
+  document.getElementById('budget-summary-wrap').innerHTML=`<div class="budget-summary">
+    <div class="bs-row">
+      <div><div class="bs-sub">今月の残り予算</div><div class="bs-main">¥${remain.toLocaleString()}</div></div>
+      <div class="bs-badge">${pct}% 消化</div>
+    </div>
+    <div class="bs-bar-bg"><div class="bs-bar-fill" style="width:${pct}%;opacity:${pct>=80?1:0.7};"></div></div>
+    <div class="bs-days"><span>経過 ${passed}日</span><span>残り ${remainDays}日</span></div>
+  </div>`;
+
+  // メトリクス
+  const remClass=remain<0?'ng':remain<monthly*0.1?'warn':'ok';
+  document.getElementById('budget-summary-wrap').insertAdjacentHTML('afterend',`
+    <div class="metric-grid" id="metric-grid-tmp">
+      <div class="metric"><div class="metric-label">月間予算</div><div class="metric-value">¥${monthly.toLocaleString()}</div></div>
+      <div class="metric"><div class="metric-label">1日あたり予算</div><div class="metric-value ok">¥${daily.toLocaleString()}</div></div>
+      <div class="metric"><div class="metric-label">今月の支出</div><div class="metric-value">¥${spent.toLocaleString()}</div></div>
+      <div class="metric"><div class="metric-label">残り予算</div><div class="metric-value ${remClass}">¥${remain.toLocaleString()}</div></div>
+    </div>`);
+  document.getElementById('metric-grid-tmp')?.removeAttribute('id');
+
+  // 残り日数での日割り
+  const rw=document.getElementById('revised-wrap');
+  if(spent>0&&remainDays>0){
+    const revised=Math.round(remain/remainDays);
+    rw.innerHTML=`<div class="metric-revised">
+      <div class="mr-label">残り${remainDays}日での日割り予算（推奨）</div>
+      <div class="mr-val">¥${revised.toLocaleString()} <span style="font-size:14px;font-weight:400;">/ 日</span></div>
+      <div class="mr-note">${revised<daily?`1日あたり¥${(daily-revised).toLocaleString()}の節約が必要です`:`余裕あり。元の予算より¥${(revised-daily).toLocaleString()}多く使えます`}</div>
+    </div>`;
+  } else {rw.innerHTML='';}
+
+  // アラート
+  const aw=document.getElementById('budget-alert-wrap');
+  if(remain<0){
+    aw.innerHTML=`<div class="alert-box alert-ng"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>今月の予算を¥${Math.abs(remain).toLocaleString()}オーバーしています</div>`;
+  } else if(pct>=80){
+    aw.innerHTML=`<div class="alert-box alert-warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>予算の${pct}%を消化。残り¥${remain.toLocaleString()}です</div>`;
+  } else if(spent>0){
+    aw.innerHTML=`<div class="alert-box alert-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>順調です。残り¥${remain.toLocaleString()}（${remainDays}日分）</div>`;
+  } else {aw.innerHTML='';}
+
+  // メトリクスの重複排除
+  const grids=document.querySelectorAll('.metric-grid');
+  if(grids.length>1) grids[0].remove();
+}
+
+// ===== 支出ログ =====
+function quickAddLog(){
+  const memo=document.getElementById('q-memo').value.trim()||'スーパー';
+  const amount=parseInt(document.getElementById('q-amount').value)||0;
+  if(amount<=0){alert('金額を入力してください');return;}
+  const today=new Date().toISOString().slice(0,10);
+  logs.push({id:Date.now(),date:today,memo,amount});
+  logs.sort((a,b)=>b.date.localeCompare(a.date));
+  save();
+  document.getElementById('q-amount').value='';
+  document.getElementById('q-memo').value='';
+  updateHeader();
+  // 軽いフィードバック
+  const btn=document.querySelector('.log-add-btn');
+  btn.textContent='✓ 記録済み';
+  setTimeout(()=>{btn.textContent='追加';},1500);
+}
+
+function addLog(){
+  const date=document.getElementById('log-date').value;
+  const memo=document.getElementById('log-memo').value.trim()||'買い物';
+  const amount=parseInt(document.getElementById('log-amount').value)||0;
+  if(!date||amount<=0){alert('日付と金額を入力してください');return;}
+  logs.push({id:Date.now(),date,memo,amount});
+  logs.sort((a,b)=>b.date.localeCompare(a.date));
+  save();
+  document.getElementById('log-amount').value='';
+  document.getElementById('log-memo').value='';
+  renderLogList();
+  recalc();
+}
+
+function deleteLog(id){
+  if(!confirm('この記録を削除しますか？'))return;
+  logs=logs.filter(l=>l.id!==id);
+  save();
+  renderLogList();
+  recalc();
+}
+
+function renderLogList(){
+  const ym=document.getElementById('budget-month').value;
+  const ml=logs.filter(l=>l.date&&l.date.startsWith(ym));
+  const wrap=document.getElementById('log-list-wrap');
+  if(!ml.length){wrap.innerHTML='';return;}
+  const total=ml.reduce((s,l)=>s+l.amount,0);
+  let html=`<div class="card"><div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>支出履歴（${ml.length}件 / 合計¥${total.toLocaleString()}）</div>`;
+  ml.forEach(l=>{
+    html+=`<div class="log-list-item">
+      <span class="log-date">${l.date.slice(5).replace('-','/')}</span>
+      <span class="log-memo">${l.memo}</span>
+      <span class="log-amt">¥${l.amount.toLocaleString()}</span>
+      <button class="del-btn" onclick="deleteLog(${l.id})">✕</button>
+    </div>`;
+  });
+  wrap.innerHTML=html+'</div>';
+}
+
+// ===== お気に入り =====
+function renderFavList(){
+  const wrap=document.getElementById('fav-list');
+  if(!favorites.length){
+    wrap.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px 0;">献立の ☆ をタップして保存しましょう</div>';
+    return;
+  }
+  wrap.innerHTML=[...favorites].reverse().map((f,i)=>{
+    const ri=favorites.length-1-i;
+    return `<div class="fav-card">
+      <div class="fav-icon">⭐</div>
+      <div class="fav-info">
+        <div class="fav-name">${f.main}</div>
+        <div class="fav-sub">副菜: ${f.side} ｜ ¥${f.cost} ｜ ${f.time}分</div>
+      </div>
+      <button class="del-btn" onclick="deleteFav(${ri})" style="font-size:14px;">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function deleteFav(idx){
+  if(!confirm('削除しますか？'))return;
+  favorites.splice(idx,1);
+  save();
+  renderFavList();
+}
+
+// ===== 初期化 =====
+function init(){
+  load();
+  const now=new Date();
+  document.getElementById('budget-month').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('log-date').value=now.toISOString().slice(0,10);
+  buildTimeSettings();
+  updateHeader();
+  renderToday();
+}
+init();
+</script>
+</body>
+</html>
